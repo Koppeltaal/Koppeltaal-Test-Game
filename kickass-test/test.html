@@ -1,0 +1,461 @@
+<html>
+    <head>
+        <title>KickassKoppeltaalConnector Test</title>
+        <style>
+            code {
+                white-space: pre-wrap;
+                tab-size: 4;
+            }
+        </style>
+        
+        <script src="lib/jquery-1.10.2.min.js" type="text/javascript"></script>
+        <script src="../koppeltaal.js" type="text/javascript"></script>
+        <script src="../koppeltaal-kickass.js" type="text/javascript"></script>
+        <script src="KickassKoppeltaalConnector.js" type="text/javascript"></script>
+        <script src="KickassKoppeltaalMessageInfo.js" type="text/javascript"></script>
+        <script src="KoppeltaalMessageProcessor.js" type="text/javascript"></script>
+        <script src="KoppeltaalMessageIterator.js" type="text/javascript"></script>
+        <script src="Logins.local.js" type="text/javascript"></script>
+        
+        <script>
+            var Koppeltaal = Koppeltaal || {};
+            var test = test || {};
+            var TEST_SERVER_URL = 'https://testconnectors.vhscloud.nl';
+            var ACC_SERVER_URL = 'https://acckoppeltaal.vhscloud.nl';
+			var REDIRECT_URL = 'http://kickasstest/kickass-test/test.html';
+            
+            // configuration
+            test.domain = getCookie('domain');
+            test.redirectUrl = REDIRECT_URL;
+            test.serverUrl = getCookie('ktServerUrl');
+            
+            //
+            
+            function setServer(serverUrl) {
+                test.serverUrl = serverUrl;
+                document.cookie = 'ktServerUrl=' + serverUrl + ';path=/';
+                $('#serverInput').val(serverUrl);
+            }
+        
+        function setDomain() {
+            test.domain = $('#domain').val();
+            document.cookie = 'domain=' + test.domain;
+		}
+		
+		function logInOAuthWithMobileLaunchCode(code) {
+			var authorization = {
+                serverUrl: test.serverUrl,
+                type: 'mobilelaunch',
+                launchCode: code,
+                redirectUrl: test.redirectUrl,
+				clientId : 'KTSTESTGAME',
+				scope : 'patient/*.read'
+            };
+			
+			
+			renderOutput({connecting: authorization}, '#authorizationOutput');
+			
+            test.client = new Koppeltaal.Client(authorization.serverUrl, authorization);
+            
+            try {
+                test.client.convertMobileLaunchCodeToToken(
+					 function (response) {
+					 // create connector (after login!)
+					 test.connector = new ranj.KickassKoppeltaalConnector(test.client, test.domain);
+					 
+					 renderLogInInfo(test.client.authorization);
+					 renderOutput({response: response}, '#authorizationOutput');
+					 },
+					 function (error) {
+					 renderOutput({error1: error}, '#authorizationOutput');
+					 });
+            } catch (error) {
+                renderOutput({error2: error.toString()}, '#authorizationOutput');
+            }
+		}
+        
+        function logInOAuth(code) {
+		
+			var accessCode = code ? code : getURLParameter('code');
+		
+            var authorization = {
+                serverUrl: test.serverUrl,
+                type: 'token',
+                accessCode: accessCode,
+                redirectUrl: test.redirectUrl
+            };
+			
+			renderOutput({connecting: authorization}, '#authorizationOutput');
+            
+			console.log("server url: " + authorization.serverUrl);
+			
+            test.client = new Koppeltaal.Client(authorization.serverUrl, authorization);
+            
+            try {
+                test.client.convertAccessCodeToToken(
+                                                     function (response) {
+                                                     // create connector (after login!)
+                                                     test.connector = new ranj.KickassKoppeltaalConnector(test.client, test.domain);
+                                                     
+                                                     renderLogInInfo(test.client.authorization);
+                                                     renderOutput({response: response}, '#authorizationOutput');
+                                                     },
+                                                     function (error) {
+                                                     renderOutput({error1: error}, '#authorizationOutput');
+                                                     });
+            } catch (error) {
+                renderOutput({error2: error.toString()}, '#authorizationOutput');
+            }
+		}
+        
+        function logInPatient() {
+            logIn($('#patientReferenceInput').val());
+        }
+        
+        function logInPractitioner() {
+            logIn($('#practitionerReferenceInput').val());
+        }
+        
+        function logIn(user) {
+            if (!test.Logins) {
+                renderOutput('no Logins', '#authorizationOutput');
+                return;
+            }
+            
+            // log in
+            test.login = test.Logins.test;
+            test.client = new Koppeltaal.Client(test.serverUrl, test.login);
+            
+            // logged in
+            test.client.authorization.patient = $('#patientReferenceInput').val();
+            test.client.authorization.user = user;
+            
+            // create connector (after login!)
+            test.connector = new ranj.KickassKoppeltaalConnector(test.client, test.domain);
+            
+            // render patient/user
+            renderLogInInfo(test.client.authorization);
+            
+            // render authorization
+            renderOutput(test.client.authorization, '#authorizationOutput');
+        }
+        
+        function renderLogInInfo(info) {
+            $('#patientReference').text(info.patient);
+            $('#userReference').text(info.user);
+        }
+        
+        function requestCarePlan() {
+            if (test.connector) {
+                renderOutput("requesting care plan", '#carePlanOutput');
+                
+                test.connector.requestCarePlan(
+                                               function (carePlan) {
+                                               if (carePlan) {
+                                               renderOutput(carePlan, '#carePlanOutput');
+                                               } else {
+                                               renderOutput('no care plan found, please check the console for more information', '#carePlanOutput');
+                                               }
+                                               },
+                                               function (error) {
+                                               renderOutput({error: error}, '#carePlanOutput');
+                                               });
+            } else {
+                renderOutput('not logged in', '#carePlanOutput');
+            }
+        }
+        
+        function postCarePlanSubActivities() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#carePlanOutput');
+            } else if (!test.connector.getCarePlan()) {
+                renderOutput('no care plan', '#carePlanOutput');
+            } else {
+                renderOutput("posting sub activities", '#carePlanOutput');
+                test.connector.postCarePlanSubActivities(
+                                                         getRandomSubActivities(),
+                                                         function (message) {
+                                                         renderOutput(test.connector.getCarePlan(), '#carePlanOutput');
+                                                         },
+                                                         function (error) {
+                                                         renderOutput({error: error}, '#carePlanOutput');
+                                                         }
+                                                         );
+            }
+        }
+        
+        function requestCarePlanActivityStatus() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#carePlanActivityStatusOutput');
+            } else {
+                renderOutput("requesting care plan activity status", '#carePlanActivityStatusOutput');
+                
+                test.connector.requestCarePlanActivityStatus(
+                                                             function (carePlanActivityStatus) {
+                                                             if (carePlanActivityStatus) {
+                                                             renderOutput(carePlanActivityStatus, '#carePlanActivityStatusOutput');
+                                                             } else {
+                                                             renderOutput('no care plan activity status found, please check the console for more information', '#carePlanActivityStatusOutput');
+                                                             }
+                                                             },
+                                                             function (error) {
+                                                             renderOutput({error: error}, '#carePlanActivityStatusOutput');
+                                                             });
+            }
+        }
+        
+        function postActivityStatusUpdate() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#carePlanActivityStatusOutput');
+            } else {
+                renderOutput("posting activity status update", '#carePlanActivityStatusOutput');
+                var newMessage = test.connector.postCarePlanActivityStatusUpdate(
+                                                                                 getRandomSubActivities(),
+                                                                                 getGameDataUpdate(),
+                                                                                 function (message) {
+                                                                                 renderOutput(test.connector.getCarePlanActivityStatus(), '#carePlanActivityStatusOutput');
+                                                                                 },
+                                                                                 function (error) {
+                                                                                 renderOutput({error: error, message: newMessage}, '#carePlanActivityStatusOutput');
+                                                                                 newMessage = null;
+                                                                                 }
+                                                                                 );
+            }
+        }
+        
+        function requestCarePlanAndActivityStatus() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#carePlanAndActivityStatusOutput');
+            } else {
+                renderOutput("requesting care plan and activity status", '#carePlanAndActivityStatusOutput');
+                
+                test.connector.requestCarePlanAndCarePlanActivityStatus(
+                                                                        function (result) {
+                                                                        renderOutput(result, '#carePlanAndActivityStatusOutput');
+                                                                        },
+                                                                        function (error) {
+                                                                        renderOutput({error: error}, '#carePlanAndActivityStatusOutput');
+                                                                        });
+            }
+        }
+        
+        function postCarePlanAndActivityStatusSubActivitiesChange() {
+            test.subActivities = getRandomSubActivities();
+            postCarePlanAndActivityStatusSubActivitiesUpdate();
+        }
+        
+        function postCarePlanAndActivityStatusSubActivitiesUpdate() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#carePlanAndActivityStatusOutput');
+            } else if (!test.connector.getCarePlan()) {
+                renderOutput('no care plan', '#carePlanAndActivityStatusOutput');
+            } else if (!test.subActivities) {
+                renderOutput('no sub activities defined', '#carePlanAndActivityStatusOutput');
+            } else {
+                renderOutput("posting sub activities and game data", '#carePlanAndActivityStatusOutput');
+                for (var i = 1; i < test.subActivities.length; ++i) {
+                    test.subActivities[i].status = getRandomSubActivityStatus();
+                }
+                test.connector.postUpdate(
+                                          test.subActivities,
+                                          getGameDataUpdate(),
+                                          function (message) {
+                                          renderOutput({
+                                                       carePlan: test.connector.getCarePlan(),
+                                                       carePlanActivityStatus: test.connector.getCarePlanActivityStatus()},
+                                                       '#carePlanAndActivityStatusOutput');
+                                          },
+                                          function (error) {
+                                          renderOutput({error: error}, '#carePlanAndActivityStatusOutput');
+                                          }
+                                          );
+            }
+        }
+        
+        function postRawMessage() {
+            if (!test.connector) {
+                renderOutput('not logged in', '#rawMessageOutput');
+            } else {
+                var message = JSON.parse($('#rawMessageInput').val());
+                if (!message) {
+                    renderOutput('no valid message', '#rawMessageOutput');
+                } else {
+                    test.client.postMessageToMailbox(
+                                                     message,
+                                                     function (response) {
+                                                     renderOutput({response: response}, '#rawMessageOutput');
+                                                     },
+                                                     function (error) {
+                                                     renderOutput({error: error}, '#rawMessageOutput');
+                                                     }
+                                                     );
+                }
+            }
+        }
+        
+        function getRandomSubActivities() {
+            var subActivities = [];
+            for (var i = 1; i <= 12; ++i) {
+                if (Math.random() < 0.3) {
+                    subActivities.push({id: 'scenario_' + i, status: getRandomSubActivityStatus()});
+                }
+            }
+            return subActivities;
+        }
+        
+        function getRandomSubActivityStatus() {
+            var statusArray = ['Available', 'InProgress', 'Completed'];
+            return statusArray[Math.floor(Math.random() * statusArray.length)];
+        }
+        
+        function getGameDataUpdate() {
+            var activityStatus = test.connector.getCarePlanActivityStatus();
+            var gameData = activityStatus ? $.extend({}, activityStatus.gameState.data) : {};
+            gameData.time = new Date().toISOString();
+            gameData.value = Math.round(Math.random() * 100);
+            gameData.count = (gameData.count || 0) + 1;
+            return gameData;
+        }
+        
+        function renderOutput(object, targetId, delimiter) {
+            var text = objectToString(object, delimiter);
+            $(targetId).text(text);
+            $('#logOutput').append(text + '\n---\n');
+        }
+        
+        function objectToString(object, delimiter) {
+            return JSON.stringify(object, null, delimiter || '\t');
+        }
+        
+        function getURLParameter(name) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [, ""])[1].replace(/\+/g, '%20')) || null;
+        }
+        
+        function getCookie(name) {
+            var cookieString = document.cookie.split(';');
+            
+            name = name + "=";
+            
+            for (var i = 0; i < cookieString.length; i++) {
+                var cookie = cookieString[i].trim();
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            
+            return undefined;
+        }
+        </script>
+    </head>
+    <body>
+        <h2>Server</h2>
+        <hr><h3> How to use the TEST Game? </h3>
+        <p>
+        <br>
+        1. There are two main modes: OAuth support and direct login. If using the OAuth support please provide the launch sequence in the browser URL. For direct login please contact koppeltaal support. 
+        Launch Sequence can be implemented as documented on Koppeltaal WIKI.
+        <p>
+        2. Once logged on the proper server (TEST or ACC) you can get the CarePlan available for the given patient. 
+        <p>
+        3. With the CarePlan an Activity Status update can be posted (always request the Object before posting an Update!)
+        <p>
+        <hr>
+        <div>
+            <input id="serverInput" placeholder="server url" type="text" value="" size="40"/>
+			<button onclick="setServer($('#serverInput').val())">Set server</button>
+            <button onclick="setServer(TEST_SERVER_URL)">test server</button>
+            <button onclick="setServer(ACC_SERVER_URL)">acc server</button>
+        </div>
+        <div>
+            <input id="domain" placeholder="domain" type="text" value="" size="40"/>
+            <button onclick="setDomain()">set new domain</button>
+        </div>
+        <script>
+            setServer(test.serverUrl || TEST_SERVER_URL);
+            setDomain("MindDistrict Kickass");
+            
+            var gameUrl = getURLParameter('gameUrl');
+            if (gameUrl) {
+                document.write('<h2>Game</h2>');
+                document.write('<h2>Domain</h2>'+test.domain);
+                document.write('<div><a href="' + gameUrl + '?code=' + getURLParameter('code') + '&state=' + getURLParameter('state') + '">open game with OAuth</a></div>');
+                document.write('<div><a href="' + gameUrl + '">open game as user http://kickassgame.nl/FHIR/Patient/222</a></div>');
+                document.write('<div><a href="' + gameUrl + '?u=B">open game as user http://kickassgame.nl/FHIR/Practitioner/987</a></div>');
+                document.write('<div><a href="' + gameUrl + 'mobile.html?code=' + getURLParameter('code') + '&state=' + getURLParameter('state') + '">open mobile app with OAuth</a></div>');
+                document.write('<div><a href="' + gameUrl + 'mobile.html">open mobile app as user http://kickassgame.nl/FHIR/Patient/222</a></div>');
+            }
+        </script>
+        <h2>Authorization</h2>
+        <div>
+            <button onclick="logInOAuth(getURLParameter('code'))">log in with oauth</button>
+        </div>
+		<div>
+            <input id="mobileLaunchCodeInput" placeholder="mobile launch code" type="text" value="" size="40"/><button onclick="logInOAuthWithMobileLaunchCode($('#mobileLaunchCodeInput').val())">log in with a mobile launch code</button>
+        </div>
+        <div>
+            <input id="patientReferenceInput" placeholder="patient uri" type="text" value="http://kickassgame.nl/FHIR/Patient/222" size="40"/>
+            <button onclick="logInPatient()">log in patient</button>
+        </div>
+        <div>
+            <input id="practitionerReferenceInput" placeholder="practitioner uri" type="text" value="http://kickassgame.nl/FHIR/Practitioner/987" size="40"/>
+            <button onclick="logInPractitioner()">log in practitioner</button>
+        </div>
+        <div>---</div>
+        <div><span>Patient: </span><span id="patientReference"></span></div>
+        <div><span>User: </span><span id="userReference"></span></div>
+        <div>---</div>
+        <code id="authorizationOutput"></code>
+        
+        <h2>Care Plan</h2>
+        <div>
+            <button onclick="requestCarePlan()">request care plan</button>
+        </div>
+        <div>
+            <button onclick="postCarePlanSubActivities()">post sub activities</button>
+            <span>random sub activities</span>
+        </div>
+        <div>---</div>
+        <code id="carePlanOutput"></code>
+        
+        <h2>Care Plan Activity Status</h2>
+        <div>
+            <button onclick="requestCarePlanActivityStatus()">request care plan activity status</button>
+        </div>
+        <div>
+            <button onclick="postActivityStatusUpdate()">post update</button>
+            <span>random sub activities/game data</span>
+        </div>
+        <div>---</div>
+        <code id="carePlanActivityStatusOutput"></code>
+        
+        <h2>Care Plan &amp; Care Plan Activity Status</h2>
+        <div>
+            <button onclick="requestCarePlanAndActivityStatus()">request care plan &amp; activity status</button>
+            <span>two messages</span>
+        </div>
+        <div>
+            <button onclick="postCarePlanAndActivityStatusSubActivitiesChange()">post sub activities change</button>
+            <span>care plan: sub activities change; activity status: sub activities change/update &amp; game data update</span>
+        </div>
+        <div>
+            <button onclick="postCarePlanAndActivityStatusSubActivitiesUpdate()">post sub activities update</button>
+            <span>activity status: sub activities update &amp; game data update</span>
+        </div>
+        <div>---</div>
+        <code id="carePlanAndActivityStatusOutput"></code>
+        
+        <h2>Post raw message (JSON)</h2>
+        <div>
+            <textarea cols="80" rows="8" id="rawMessageInput"></textarea>
+        </div>
+        <div>
+            <button onclick="postRawMessage()">post message</button>
+        </div>
+        <div>---</div>
+        <code id="rawMessageOutput"></code>
+        
+        <h2>Log</h2>
+        <div>---</div>
+        <code id="logOutput"></code>
+    </body>
+</html>

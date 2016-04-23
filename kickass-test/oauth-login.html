@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>Kick ASS Game Login</title>
+        <script src="lib/jquery-1.10.2.min.js" ></script>
+        <script src="../koppeltaal.js" ></script>
+        <script src="OAuthLogin.js" ></script>
+    </head>
+    <body>
+        <script>
+			$(function () {
+				ranj.OAuthLogin.getAuthorizationUrl(
+						'https://www.koppeltaal.nl/apps/test/games/test_game_r_0_1/kickass-test/test.html',
+						function (authorizeUrl) {
+							console.log(authorizeUrl);
+							location.href = authorizeUrl;
+						},
+						function (error) {
+							console.error("oauth failed: " + error);
+						});
+			});
+        </script>
+    </body>
+</html>
