@@ -95,8 +95,10 @@
                 test.client.convertAccessCodeToToken(
                                                      function (response) {
                                                      // create connector (after login!)
-                                                     test.connector = new ranj.KickassKoppeltaalConnector(test.client, test.domain);
+                                                     test.connector = new ranj.KickassKoppeltaalConnector(test.client, response.domain);
                                                      
+													 $('#domain').val(response.domain);
+													 
                                                      renderLogInInfo(test.client.authorization);
                                                      renderOutput({response: response}, '#authorizationOutput');
                                                      },
