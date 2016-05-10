@@ -64,7 +64,7 @@ var Koppeltaal = Koppeltaal || {};
 		try {
 			info = ranj.KickassKoppeltaalMessageInfo.getCarePlanInfo(message);
 			console.log("_processCarePlanMessage care plan " + JSON.stringify(info, null, '\t'));
-			this._validateNotFalsy(info.id, "no care plan id");
+			//this._validateNotFalsy(info.id, "no care plan id");
 			//this._validateNotFalsy(info.reference, "no care plan reference");
 			this._validateNotFalsy(info.patient.reference, "no care plan patient reference");
 			this._validateEquals(info.patient.reference, this._client.authorization.patient, "care plan patient does not match authorization patient");
