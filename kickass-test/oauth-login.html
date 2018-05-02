@@ -8,8 +8,18 @@
     <body>
         <script>
 			$(function () {
-				ranj.OAuthLogin.getAuthorizationUrl(
-						'https://www.koppeltaal.nl/apps/test/games/test_game_r_0_1/kickass-test/test.html',
+				
+				// Create redirect url based on window.location
+				var redirectUrl = window.location.protocol + "//" + window.location.host;
+								
+				var paths = window.location.pathname.split( '/' )
+				//remove last element.
+				paths.pop();
+
+				redirectUrl = redirectUrl + paths.join("/") + "/test.html";
+
+				ranj.OAuthLogin.getAuthorizationUrl(						
+						redirectUrl,
 						function (authorizeUrl) {
 							console.log(authorizeUrl);
 							location.href = authorizeUrl;
