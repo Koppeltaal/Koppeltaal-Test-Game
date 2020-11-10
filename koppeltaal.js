@@ -72,6 +72,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: "GET",
 			dataType: 'json',
 			url: searchUrl,
+			crossDomain: true,
 			contentType: "application/json",
 			beforeSend: function (xhr)
 			{
@@ -101,6 +102,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: "GET",
 			dataType: 'json',
 			url: searchUrl,
+			crossDomain: true,
 			contentType: "application/json",
 			beforeSend: function (xhr)
 			{
@@ -121,6 +123,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			dataType: 'json',
 			url: searchUrl,
 			contentType: "application/json",
+			crossDomain: true,
 			beforeSend: function (xhr)
 			{
 				xhr.setRequestHeader("Authorization", Koppeltaal.Util.getAuthorizationString(authorization));
@@ -147,6 +150,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: "PUT",
 			url: url,
 			contentType: "application/json",
+			crossDomain: true,
 			data: JSON.stringify(messageHeader),
 			beforeSend: function (xhr)
 			{
@@ -161,6 +165,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: "GET",
 			dataType: 'json',
 			url: this.getActivityDefinitionsUrl,
+			crossDomain: true,
 			contentType: "application/json",
 			beforeSend: function (xhr)
 			{
@@ -190,6 +195,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			url: this.mailboxUrl,
 			contentType: "application/json",
 			data: JSON.stringify(message),
+			crossDomain: true,
 			beforeSend: function (xhr)
 			{
 				xhr.setRequestHeader("Authorization", Koppeltaal.Util.getAuthorizationString(authorization));
@@ -219,6 +225,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: 'GET',
 			dataType: 'json',
 			url: this.metaDataUrl,
+			crossDomain: true,
 			contentType: "application/json",
 			success: successCallback,
 			error: errorCallback
@@ -313,6 +320,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 			type: 'POST',
 			dataType: 'json',
 			url: tokenUrl,
+			crossDomain: true,
 			success: function (response)
 			{
 				$.extend(authorization, response); // Add the token information to the authorization object.
@@ -333,6 +341,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 				type: 'POST',
 				dataType: 'json',
 				url: authorizeUrl,
+				crossDomain: true,
 				success: function (response)
 				{
 					if (!response.authorization_code)
