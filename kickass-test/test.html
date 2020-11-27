@@ -20,9 +20,9 @@
         <script>
             var Koppeltaal = Koppeltaal || {};
             var test = test || {};
-            var TEST_SERVER_URL = 'https://testconnectors.vhscloud.nl';
-            var ACC_SERVER_URL = 'https://acckoppeltaal.vhscloud.nl';
-			var REDIRECT_URL = 'http://kickasstest/kickass-test/test.html';
+            var TEST_SERVER_URL = 'https://acckoppeltaal.vhscloud.nl/';
+            var ACC_SERVER_URL = 'https://stablekoppeltaal.vhscloud.nl/';
+			var REDIRECT_URL = 'https://tools.koppeltaal.nl/test/kickass-test/test.html';
             
             // configuration
             test.domain = getCookie('domain');
@@ -97,6 +97,8 @@
                                                      // create connector (after login!)
                                                      test.connector = new ranj.KickassKoppeltaalConnector(test.client, test.domain);
                                                      
+													 $('#domain').val(response.domain);
+													 
                                                      renderLogInInfo(test.client.authorization);
                                                      renderOutput({response: response}, '#authorizationOutput');
                                                      },
