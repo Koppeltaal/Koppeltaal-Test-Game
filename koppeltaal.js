@@ -317,7 +317,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 		tokenUrl += '&code=' + encodeURIComponent(accessCode);
 		tokenUrl += '&redirect_uri=' + encodeURIComponent(redirectUrl);
 		$.ajax({
-			type: 'POST',
+			type: 'GET',
 			dataType: 'json',
 			url: tokenUrl,
 			crossDomain: true,
@@ -338,7 +338,7 @@ Koppeltaal.Client = function (baseUrl, authorization)
 		this.getOAuthAuthorizeUrl(clientId, urlToRedirectTo, scope, state, function(authorizeUrl)
 		{
 			$.ajax({
-				type: 'POST',
+				type: 'GET',
 				dataType: 'json',
 				url: authorizeUrl,
 				crossDomain: true,
